@@ -1,0 +1,489 @@
+---
+title: "MCMC"
+author: "闆ㄧ"
+date: "20190317"
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE, 
+  warning = FALSE
+  )
+library(knitr)
+library(ggplot2)
+library(ggpkt)
+```
+
+# 1.摘要
+MCMC,也称为马尔可夫链蒙特卡洛(Markov Chain Monte Carlo)方法，是用于从复杂分布中获取随机样本的统计学算法。正是MCMC方法的提出使得许多贝叶斯统计问题的求解成为可能。MCMC方法是一类典型的在编程上容易实现，但原理的解释和理解却相对困难的统计学方法。对于这类方法，如果不能够理解其内部原理便难以在实践过程中进行应用。本次分享会分别就两个MC进行理论介绍，而后对MCMC方法进行阐述，最后通过实例演示应用过程。
+
+# 2.随机抽样
+随机性的获取实际上并不像我们以为的那样容易，计算指定的一个点的概率质量（概率密度）容易，但要随机的算一堆点就要在保证随机性上做很多工作。一条解决路径是从简单分布中抽取随机样本，然后通过某种变换映射到目标分布中去。比如服从均匀分布的样本可以通过Box-Muller变换映射到正态分布中去，那么为了获取服从正态分布的样本就可以先从均匀分布中抽样再进行变换。那么该如何从均匀分布中进行随机抽样呢？工程上可以通过线性同余发生器来生成服从均匀分布的伪随机数。事实上，许多常用分布都可以通过均匀分布变换而来。
+
+>PS：如何手工获取随机数？
+
+当然通常为了获取服从某个分布的样本都是直接使用现成的程序库，并不用关心程序背后的原理。但问题是在实践中并不是所有分布都能够在标准的程序库中找到相应的方法，甚至有些分布的形式都无显式的用公式进行表示。这时候MCMC就派上用场了。
+
+# 3.蒙特卡洛模拟
+## 3.1 简介
+
+蒙特卡洛模拟是一类通过随机抽样过程来求取最优解的方法的总称，如果建立蒙特卡洛模型的过程没有出错，那么抽样次数越多，得到的答案越精确。
+蒙特卡洛模拟的实现，可以归纳为如下三个步骤：
+- 1. 将欲求解问题转化为概率过程。
+- 2. 从已知分布中抽样
+- 3. 通过样本计算各类统计量，此类统计量就是欲求问题的解。
+
+## 3.2 示例
+### 问题
+将新生随机分配，构成一个60人的班级，求解任何两个人的生日都不在同一天的概率。
+
+### 求解
+
+构建蒙特卡洛过程：
+  （1）由于学生是随机分配到一个班级的，所以每个人的出生日期是独立的，并且是从1~365之内等概率取值的。构造统计量$B\sim P365(p1,p2,\dots,p365)，p1=p2=,\dots,p365=\frac{1}{365}$，则从$P365$中抽样的行为可视为对学生分配到班级的模拟。那么抽样60次组成的集合就是对一个班级的模拟。因此定义一次抽样就是$(b_1,\dots,b_{60})$
+  （2）重复第一步N次，N取一个足够大的数，这里暂且取N为10000。
+  （3）ti=1表示第i个样本中任意两个数都不相等，否则ti=0。
+  （4）P（没有人的生日在同一天）=sum(ti)/N
+
+```{r}
+prob.one <- function(n,N){
+    birdays <- matrix(round(runif(n*N,1,365)),ncol = n)
+    onedayrate <- apply(birdays,1,function(x){
+        fbirdays <- factor(x)
+        (n - length(levels(fbirdays)))/n
+    })
+    nonday <- onedayrate[which(onedayrate == 0)]
+    hist(onedayrate,freq = F,main = "生日在同一天的比率",col = "pink")
+    # curve(dnorm(x,mean = mean(onedayrate),sd = sd(onedayrate)),
+    #       add = T,col = "blue",lwd = 2)
+    tt <- paste("取0的概率:",length(nonday)/N)
+    legend("topright",legend = c("正态密度曲线",tt),lty = 1:2,
+           col = c("blue","red",NULL),cex = .7)
+    print("没有人生日在同一天的概率：")
+    return(length(nonday)/N)
+    #print("没有人生日在同一天的概率为：",return(length(nonday)/N))
+}
+```
+
+```{r}
+prob.one(60, 1000)
+```
+
+
+# 4.马尔可夫链
+## 4.1定义
+
+## 4.2稳态
+- $\pi$是$\pi P = P$的唯一非负解
+- $\lim_{n\rightarrow+\infty}P_{ij}^n$存在且与$i$无关。
+
+### C-K方程
+$P^{k + l} = P^kP^l$, 推出$P^{(n)} = P^1P^{(n-1)}=P^1P^1P^{(n-2)}=...=P^n$
+
+## 4.3示例
+假设媳妇儿的心情大致可分为三种：平静、高兴、愤怒，并且每隔15分钟就会发生一次状态转移，同时下一时刻心情的变化只与上一刻的心情有关。那么根据定义，一段时间内她的心情状态就构成一条马尔可夫链。假定这几种心情状态的一步转移概率矩阵构成如下。希望知道每天下班回家，见着她时最有可能处于那种心，好提前做好心理准备。
+
+```{r }
+states_name <- c('平静', '高兴', '愤怒')
+P_s1 <- matrix(
+  c(0.2, 0.3, 0.5, 0.1, 0.6, 0.3, 0.4, 0.2, 0.4), ncol = 3, byrow = TRUE, 
+  dimnames = list(states_name, states_name)
+  )
+kable(P_s1)
+```
+
+随意给定初值条件进行概率推演，结果如下。
+```{r}
+# 初始概率 平静 高兴 愤怒
+pi0 <- matrix(c(0.7, 0.2, 0.1), ncol = 3, byrow = TRUE)
+colnames(pi0) <- states_name
+# 概率迭代
+PI <- pi0
+for (i in 2:10) {
+  PI <- rbind(PI, PI[i - 1,] %*% P_s1)
+}
+kable(PI)
+```
+
+发现有0.613的概率不会挨批。于是每天携带一块秒表，进门前快速按下读取毫秒数。如果数值
+小于0.613放心大胆进门，否则等15分钟再按一次。
+
+
+
+# 4.蒙特卡洛
+
+
+# 5.MCMC
+## 5.1 MCMC采样
+
+### 5.1.1原理
+####(1)细致平稳条件
+**定理** 如果非周期马氏链的转移矩阵$P$和概率分布$\pi(x)$满足
+$$
+\pi(i) P_{ij} = \pi(j) P_{ji}，对任意的i,j
+$$
+则$\pi(x)$为该马氏链的平稳分布。
+令$\pi(x)$为需要抽样的目标分布，则如果能够得到一个转移概率矩阵$P$使得细致平稳条件成立，那么从一个简单分布中获取随机样本（这里简单分布指容易通过计算机程序进行直接抽样的分布，采用什么样的简单分布，视场景而定），经过$P$完成若干次转移变换，则最终会到达目标分布从而完成从$\pi(x)$中进行抽样。因而只要能够确定$P$，就能够实现抽样。
+
+####(2)利用细致平稳条件
+既然知道了细致平稳条件这一硬性标杆，即便没有条件，那就创造条件。
+假设随机给定一个形式上合规的矩阵$Q$作为转移矩阵,则细致平稳条件一般无法满足：
+$$
+p(i)q(i,j)\neq p(j)q(j,i)
+$$
+此时构造如下两个新变量，分别乘以等式两端。
+$$
+\alpha(i,j)=p_jq(j,i), \alpha(j,i)=p_iq(i,j)
+$$
+由于：
+$$
+p(i)q(i,j)p(j)q(j,i)=p(j)q(j,i)p(i)q(i,j) 
+$$
+所以有：
+$$
+p(i)q(i,j)\alpha_{ij}=p(j)q(j,i)\alpha_(j,i) 
+$$
+此时令:
+$$
+Q^\prime(i,j) = q(i,j)\alpha(i,j), Q^\prime(j,i) = q(j,i)\alpha(j,i)
+$$
+可知，在引入$Q^\prime$的条件下，下式成立，也即细致平稳条件满足。满足了细致平稳条件，就可进行抽样了！
+$$
+p(i)Q^\prime(i,j)=p(j)Q^\prime(j,i)
+$$
+
+
+####(2)理解
+要理解$Q -> Q^\prime$的过程是如何实现的，就是要理解$\alpha(i,j)$在前后两个马氏链的变换上所起到的作用。
+
+假设有一枚不均质的硬币，$P(X=正面)=0.6$，那么如何模拟一次抛掷的动作呢？如下图所示，问题等价于在[0,1]区间内，在0.6的位置将整个区间分割为[0,0.6],(0.6,1],并向其中随机撒点，任意一次撒点后点落入左侧区间，则表示正面向上，落入右侧区间则表示反面向上。随机撒点的动作，通过**均匀分布**抽样实现。
+
+```{r fig.height=4, fig.width=10, message=FALSE, warning=FALSE}
+temp <- data.frame(start = c(0, 0.6), end = c(0.6, 1), type = c('pa', 'pb'))
+ggplot() + 
+  geom_segment(data = temp, aes(x = start, xend = end, y = 0, yend = 0)) + 
+  geom_point(data = temp, aes(x = start, y = 0), col = 'blue', size = 2) +
+  geom_point(aes(x = c(0, 1),y = 0), size = 2) +
+  geom_point(aes(x = 0.5, y = 0.15), col = 'red', size = 3) +
+  geom_segment(aes(x = 0.4, y = 0.18, xend = 0.48, yend = 0.16), 
+               arrow = arrow(length = unit(0.03, "npc")), size = 1) +
+  geom_text(aes(x = 0.55, y = 0.15, label = 'U(0, 1)')) +
+  geom_text(aes(x = c(0, 0.6, 1), y = -0.02, label = c('0', '0.6','1'))) +
+  geom_text(aes(x = c(0.25, 0.75), y = -0.03, label = c('Q新', 'Q旧'))) +
+  theme_void() +
+  scale_y_continuous(limits = c(-0.1, 0.25))
+```
+
+在这里$\alpha(i,j)$，实际上就是扮演了硬币的角色，它的作用就是在保持整个抽样过程随机性的前提下，按概率实现马氏链的更新。
+
+
+### 5.1.2算法
+假设Q表示一步状态转移矩阵（对应的在连续的情况下，用D表示概率密度函数）。
+1. 用X表示由MCMC过程产生的状态向量，$Q_0$表示状态转移矩阵（$D_0$表示抽样分布）。初始化$X_0=x_0$，其中$x_0$是从状态集（分布）中获取的随机样本。
+2. 对$t = 0, 1, 2, \cdots,n$重复如下步骤进行采样：
+   第$t$时刻有$X_t=x_t$, 采样$y~q(x|x_t)$(此时状态转移矩阵为$Q_t=q(x|x_t)$)。
+   从$U(0,1)$中抽取一个样本点$u$
+   如果$u<\alpha(x_t, y)=p(y)*q(x_t|y)$则接受转移$X_{t+1}=y$
+   否则拒绝转移，$X_{t+1}=x_t$, $Q_{t+1} = Q_t$
+   
+
+## 5.2 M-H方法
+### 5.2.1原理
+由于$\alpha(i,j)=p_{j}q(j,i) < 1$，通常是一个比较小的数字，因此在一次采样中很容易拒绝跳转。从而导致采样的时间成本、计算成本很高。M-H(Metropolis-Hastings)采样，通过放大跳转率$\alpha(i,j)$提高了跳转概率，缩短了采样过程。
+对下式两边同时除以$p(i)q(i,j)$
+$$
+p(i)q(i,j)p(j)q(j,i)=p(j)q(j,i)p(i)q(i,j) \\ 
+p(i)q(i,j)\frac{p(j)q(j,i)}{p(i)q(i,j)}=p(j)q(j,i) 
+$$
+此时有
+$$
+\alpha(i,j)=\frac{p(j)q(j,i)}{p(i)q(i,j)},\alpha(j,i)=1
+$$
+此时，如果$\alpha(i,j) = \frac{p(j)q(j,i)}{p(i)q(i,j)} < 1$则$\alpha(i,j)$按照$\alpha(j,i)$放大到1的比例等比例放大。但如果$\frac{p(j)q(j,i)}{p(i)q(i,j)} > 1$就不行了，概率是不肯大于1的。那么此时就反过来,同除以$p(j)q(j,i)$.
+
+$$
+p(i)q(i,j)p(j)q(j,i)=p(j)q(j,i)p(i)q(i,j) \\ 
+p(i)q(i,j)=p(j)q(j,i)\frac{p(i)q(i,j)}{p(j)q(j,i)}
+$$
+此时有
+$$\alpha(i,j) = 1,\alpha(j,i)=\frac{p(i)q(i,j)}{p(j)q(j,i)}$$
+当然为了跳转，我关心的只有$\alpha(i,j)$，根据以上情况新的$\alpha(i,j)$可定义为：
+$$
+\alpha(i,j)=min(\frac{p(j)q(j,i)}{p(i)q(i,j)},1)
+$$
+这就是M-H方法对MCMC方法的改进。
+
+### 5.2.2算法
+其它不变，这里只是改变了跳转率的计算方法。
+1. 用X表示由MCMC过程产生的状态向量，$Q_0$表示状态转移矩阵（$D_0$表示抽样分布）。初始化$X_0=x_0$，其中$x_0$是从状态集（分布）中获取的随机样本。
+2. 对$t = 0, 1, 2, \cdots,n$重复如下步骤进行采样：
+   第$t$时刻有$X_t=x_t$, 采样$y~q(x|x_t)$(此时状态转移矩阵为$Q_t=q(x|x_t)$)。
+   从$U(0,1)$中抽取一个样本点$u$
+   如果$u<\alpha(x_t, y)=min(\frac{p(j)q(j,i)}{p(i)q(i,j)},1)$则接受转移$X_{t+1}=y$
+   否则拒绝转移，$X_{t+1}=x_t$, $Q_{t+1} = Q_t$
+   
+
+## 5.3 Gibbs方法
+### 5.3.1原理
+####(1)M-H方法的局限
+M-H方法，虽然实现了跳转率的放大，但依然不能保证100%的跳转，这就意味着总归还是要浪费不少样本，即使已经到达稳态，也还是经常要抛弃样本。这也极大的限制了M-H算法的应用范围。如果有一种方法，能够保证每次跳转都以100%的概率被接受，那就更完美的解决了这一问题。
+
+####(2)轮换采样
+对于定义于二维空间中的马氏链，考虑如下等式：
+$$
+p(x_1, y_1)p(y_2|x_1)=p(x_1)p(y_1|x_1)p(y_2|x_1) \\
+p(x_1, y_2)p(y_1|x_1)=p(x_1)p(y_2|x_1)p(y_1|x_1)
+$$
+两式右边相等，因此有：
+$$
+p(x_1, y_1)p(y_2|x_1)=p(x_1, y_2)p(y_1|x_1)
+$$
+这个等式完全满足细致平稳条件，可以实现点$(x_1,y_1)$到点$(x_1,y_2)$以100%的跳转率进行转换。同时可以看到转换后的两点在平行于$y$轴的同一条直线上。同理可知固定$y$轴而在$x$轴的方向上进行采样，也同样满足细致平稳条件。因此对于二维空间中的马氏链，如下图所示，只要在两个轴的方向上进行采样就不存在接受或者抛弃的问题。
+
+同理，将这一性质推广到$N$维空间也是成立的。
+
+
+### 5.3.2算法
+以二元分布$D(x,y)$为例
+1.初始化$X_0=x_0,Y_0=y_0$
+2.对$t = 0, 1, 2, \cdots,n$进行坐标轮换采样
+  $y_{t+1}\sim p(y|x_t)$
+  $x_{t+1}\sim p(x|y_{t+1})$
+
+
+# 6.示例
+## 6.1 M-H抽样
+### 问题
+使用M-H方法实现从混合正态分布中抽样。
+
+### 求解
+
+```{r}
+SomeDist <- function(x){
+  if (x < 6) {
+    res <- dnorm(x, mean = 2, sd = 1)
+  } else {
+    res <- dnorm(x, mean = 9, sd = 2)
+  }
+  return(res)
+}
+ 
+n1 = 5000  # burn in
+n2 = 25000
+samples <- rep(0, n1 + n2)
+for (i in 1:(n1 + n2 - 1)) {
+  temp <- rnorm(1,mean = samples[i], sd = 4)
+  alpha <- min(1, SomeDist(temp)/SomeDist(samples[i]))
+  if (runif(1, 0, 1) < alpha) {
+    samples[i + 1] <- temp
+  } else {
+    samples[i + 1] <- samples[i]
+  }
+}
+
+correct_samples <- samples[(n1 + 1):n2]
+ 
+```
+
+
+```{r}
+sampledata <- data.frame(x = correct_samples)
+norm1 <- data.frame(x = correct_samples, y = dnorm(correct_samples, 2, 1))
+norm2 <- data.frame(x = correct_samples, y = dnorm(correct_samples, 9, 2))
+ggplot() +
+  geom_histogram(
+    data = sampledata, 
+    aes(x, y = ..density.., fill = ..density..), binwidth = 0.2
+    ) +
+  geom_point(data = norm1, aes(x = x, y = y), col = 'orangered') +
+  geom_point(data = norm2, aes(x = x, y = y), col = 'forestgreen')
+
+  # theme_yk_academic_brief() +
+  # scale_fill_academic_light()
+
+```
+
+
+```{r}
+SomeDist <- function(x){
+  if (x < 6) {
+    res <- dnorm(x, mean = 6, sd = 2)
+  } else {
+    res <- dnorm(x, mean = 6, sd = 6)
+  }
+  return(res)
+}
+ 
+n1 = 15000  # burn in
+n2 = 25000
+samples <- rep(0, n1 + n2)
+for (i in 1:(n1 + n2 - 1)) {
+  temp <- rnorm(1,mean = samples[i], sd = 4)
+  alpha <- min(1, SomeDist(temp)/SomeDist(samples[i]))
+  if (runif(1, 0, 1) < alpha) {
+    samples[i + 1] <- temp
+  } else {
+    samples[i + 1] <- samples[i]
+  }
+}
+
+correct_samples <- samples[(n1 + 1):n2]
+```
+
+```{r}
+sampledata <- data.frame(x = correct_samples)
+norm1 <- data.frame(x = correct_samples, y = dnorm(correct_samples, 6, 2))
+norm2 <- data.frame(x = correct_samples, y = dnorm(correct_samples, 6, 6))
+ggplot() +
+  geom_histogram(
+    data = sampledata, 
+    aes(x, y = ..density.., fill = ..density..), binwidth = 0.2
+    ) +
+  geom_point(data = norm1, aes(x = x, y = y), col = 'orangered') +
+  geom_point(data = norm2, aes(x = x, y = y), col = 'forestgreen')
+```
+
+
+## 6.2 Gibbs抽样
+### 问题
+使用Gibbs方法从二元正态分布$N(\mu_1, \mu_2, \sigma_1^2, \sigma_2^2,\rho)$中抽样
+### 求解
+按条件有随机变量$X_1\sim N(\mu_1,\sigma_1^2)$,$X_2\sim N(\mu_2,\sigma_2^2)$服从正态分布。因此$X_1|X_2$以及$X_2|X_1$服从正态分布，且$X_1|X_2$的期望和方差为：
+$$
+E[X_1|X_2=x_2]=\mu_1 + \rho\frac{\sigma_1}{\sigma_2}(x_2 - \mu_2)\\
+Var[X_1|X_2=x_2]=(1 - \rho^2)\sigma_1^2
+
+$$
+$X_2|X_1$也可类比。因此条件概率密度为：
+$$
+f(x_1|x_2)\sim N(\mu_1 + \rho\frac{\sigma_1}{\sigma_2}(x_2 - \mu_2), (1 - \rho^2)\sigma_1^2)\\
+f(x_2|x_1)\sim N(\mu_2 + \rho\frac{\sigma_2}{\sigma_2}(x_1 - \mu_1), (1 - \rho^2)\sigma_2^2)
+
+$$
+抽样过程：
+```{r}
+N <- 5000
+N.burn <- 1000
+X <- matrix(0, N, 2)
+rho <- -0.6
+mu1 <- 2
+mu2 <- 10
+sigma1 <- 1
+sigma2 <- 2
+s1 <- sqrt(1 - rho^2)*sigma1
+s2 <- sqrt(1 - rho^2)*sigma2
+X[1, ] <- c(mu1, mu2) # 用均值点作为抽样起点
+
+
+for (i in 2:N) {
+  if (i %% 2 == 1) {
+    # 奇数步固定x2对x1采样
+    x2 <- X[i - 1, 2]
+    m1 <- mu1 + rho*(x2 - mu2)*sigma1/sigma2
+    X[i, 1] <- rnorm(1, m1, s1)
+    X[i, 2] <- x2
+  } else {
+    # 偶数步固定x1对x2采样
+    x1 <- X[i - 1, 1]
+    m2 <- mu2 + rho*(x1 - mu1)*sigma2/sigma1
+    X[i, 1] <- x1
+    X[i, 2] <- rnorm(1, m2, s2)
+  }
+  
+}
+
+X.samples <- X[(N.burn + 1):N,]
+
+```
+
+采样轨迹
+```{r}
+X.samples.df <- as.data.frame(X.samples)
+names(X.samples.df) <- c('X1', 'X2')
+ggplot() +
+  geom_path(data = X.samples.df[1:500,], aes(x = X1, y = X2))
+```
+
+由于坐标轮换采样会导致相邻两个样本之间是条件独立而非完全独立的，但不相邻的样本之间是完全独立的。因此为了保证采样的随机性，仅选取奇数下标的样本作为最终的抽样结果。
+
+```{r}
+X.samples.real <- X.samples[seq(1, nrow(X.samples), by = 2),]
+```
+
+均值
+```{r}
+colMeans(X.realsample)
+```
+
+方差
+```{r}
+cov(X.realsample)
+```
+
+样本分布
+```{r}
+X.samples.real.df <- as.data.frame(X.samples.real)
+names(X.samples.real.df) <- c('X1', 'X2')
+ggplot(X.samples.real.df) +
+  geom_point(aes(X1, X2), alpha = .4, col = 'blue',size = 2)
+```
+
+以上过程完演示了完全的Gibbs抽样，由于相邻样本间条件独立性的问题，更快的采样方式是在每次循环中采样完一个坐标以后，立即采样另一个坐标并将采样得到的两个坐标的新值合并为一个样本点，相当于从A点出发采样两次得到B和C，但是只存储C点（如下图所示）。
+
+
+```{r}
+ggplot() + 
+  geom_segment(aes(x = c(0, 0), xend = c(0, 2), y = c(0, 0), yend = c(2,0)), 
+               arrow = arrow(length = unit(0.03, "npc")), size = 1) +
+  geom_segment(aes(x = 0.1, xend = 0.1, y = 0.1, yend = 1.5), col = 'blue') +
+  geom_segment(aes(x = 0.1, xend = 1.4, y = 1.5, yend = 1.5), col = 'blue') +
+  geom_point(aes(x = c(0.1, 0.1, 1.4), y = c(0.1, 1.5, 1.5)), col = 'red', size = 3) +
+  geom_text(aes(x = c(0.1, 0.1, 1.4), y = c(0.1, 1.5, 1.5), label = c('A', 'B', 'C')),
+            hjust = -1, vjust = -1.2) +
+  coord_fixed() +
+  scale_y_continuous('', limits = c(0, 2)) +
+  scale_x_continuous('', limits = c(0, 2))
+```
+
+直接采样程序：
+```{r}
+N <- 5000
+N.burn <- 1000
+X <- matrix(0, N, 2)
+rho <- -0.6
+mu1 <- 2
+mu2 <- 10
+sigma1 <- 1
+sigma2 <- 2
+s1 <- sqrt(1 - rho^2)*sigma1
+s2 <- sqrt(1 - rho^2)*sigma2
+X[1, ] <- c(mu1, mu2) # 用均值点作为抽样起点
+
+for (i in 2:N) {
+  # 先固定x2对x1采样
+  x2 <- X[i - 1, 2]
+  m1 <- mu1 + rho*(x2 - mu2)*sigma1/sigma2
+  X[i, 1] <- rnorm(1, m1, s1)
+  # 再固定x1对x2采样
+  x1 <- X[i, 1]
+  m2 <- mu2 + rho*(x1 - mu1)*sigma2/sigma1
+  X[i, 2] <- rnorm(1, m2, s2)
+}
+
+X.samples <- X[(N.burn + 1):N,]
+```
+
+
+
+# 7.参考资料
+- [1] 靳志辉《LDA数学八卦》
+- [2] 韦来生《贝叶斯统计》
+
+
+

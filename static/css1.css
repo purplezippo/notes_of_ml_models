@@ -1,0 +1,17 @@
+
+img{
+    transform:scale(0.8);
+    -ms-transform:scale(0.8);
+    -webkit-transform:scale(0.8);
+    -o-transform:scale(0.8);
+    -moz-transform:scale(0.8);
+}
+
+img2{
+    transform:scale(0.5);
+    -ms-transform:scale(0.5);
+    -webkit-transform:scale(0.5);
+    -o-transform:scale(0.5);
+    -moz-transform:scale(0.5);
+}
+

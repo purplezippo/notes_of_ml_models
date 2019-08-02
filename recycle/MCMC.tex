@@ -1,0 +1,500 @@
+\documentclass[]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} % provides \textsubscript
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+\else % if luatex or xelatex
+  \ifxetex
+    \usepackage{mathspec}
+  \else
+    \usepackage{fontspec}
+  \fi
+  \defaultfontfeatures{Ligatures=TeX,Scale=MatchLowercase}
+\fi
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+% use microtype if available
+\IfFileExists{microtype.sty}{%
+\usepackage{microtype}
+\UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\hypersetup{unicode=true,
+            pdftitle={MCMC},
+            pdfauthor={闆ㄧ},
+            pdfborder={0 0 0},
+            breaklinks=true}
+\urlstyle{same}  % don't use monospace font for urls
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.77,0.63,0.00}{#1}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\usepackage{longtable,booktabs}
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+\IfFileExists{parskip.sty}{%
+\usepackage{parskip}
+}{% else
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{0}
+% Redefines (sub)paragraphs to behave more like sections
+\ifx\paragraph\undefined\else
+\let\oldparagraph\paragraph
+\renewcommand{\paragraph}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+\let\oldsubparagraph\subparagraph
+\renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+
+%%% Use protect on footnotes to avoid problems with footnotes in titles
+\let\rmarkdownfootnote\footnote%
+\def\footnote{\protect\rmarkdownfootnote}
+
+%%% Change title format to be more compact
+\usepackage{titling}
+
+% Create subtitle command for use in maketitle
+\newcommand{\subtitle}[1]{
+  \posttitle{
+    \begin{center}\large#1\end{center}
+    }
+}
+
+\setlength{\droptitle}{-2em}
+
+  \title{MCMC}
+    \pretitle{\vspace{\droptitle}\centering\huge}
+  \posttitle{\par}
+    \author{闆ㄧ}
+    \preauthor{\centering\large\emph}
+  \postauthor{\par}
+      \predate{\centering\large\emph}
+  \postdate{\par}
+    \date{2019骞3鏈\textless{}88\textgreater{}17鏃}
+
+
+\begin{document}
+\maketitle
+
+\section{1.摘要}
+
+MCMC,也称为马尔可夫链（Markov chain）蒙特卡洛(Monte
+Carlo)方法，是用于从复杂分布中
+获取随机样本的统计学算法。正是MCMC方法的提出使得许多贝叶斯统计问题的求解成为可能。MCMC方法是一类典型的在编程上容易实现，但原理的解释和理解却相对困难的统计学方法，同时如果不理解也难以使用。本文会先就两个MC进行理论介绍，而后进行MCMC方法的阐述并通过实例加以说明。
+
+\section{2.随机抽样}
+
+随机性的获取实际上并不像我们以为的那样容易，计算指定的一个点的概率质量（概率密度）容易，但要随机的算一堆点就要在保证随机性上做很多工作。一条解决路径是从简单分布中抽取随机样本，然后通过某种变换映射到目标分布中去。比如服从均匀分布的样本可以通过Box-Muller变换映射到正态分布中去，那么为了获取服从正态分布的样本就可以先从均匀分布中抽样再进行变换。那么该如何从均匀分布中进行随机抽样呢？工程上可以通过线性同余发生器来生成服从均匀分布的伪随机数。事实上，许多常用分布都可以通过均匀分布变换而来。
+
+\begin{quote}
+PS：如何手工获取随机数？
+\end{quote}
+
+当然通常为了获取服从某个分布的样本都是直接使用现成的程序库，并不用关心程序背后的原理。但问题是在实践中并不是所有分布都能够在标准的程序库中找到相应的方法，甚至有些分布的形式都无显式的用公式进行表示。这时候MCMC就派上用场了。
+
+\section{3.蒙特卡洛模拟}
+
+\section{4.马尔可夫链}
+
+\subsection{4.1定义}
+
+\subsection{4.2稳态}
+
+\begin{itemize}
+\tightlist
+\item
+  \(\pi\)是\(\pi P = P\)的唯一非负解
+\item
+  \(\lim_{n\rightarrow+\infty}P_{ij}^n\)存在且与\(i\)无关。
+\end{itemize}
+
+\subsubsection{C-K方程}\label{c-k}
+
+\(P^{k + l} = P^kP^l\),
+推出\(P^{(n)} = P^1P^{(n-1)}=P^1P^1P^{(n-2)}=...=P^n\)
+
+\subsection{4.3示例}
+
+假设媳妇儿的心情大致可分为三种：平静、高兴、愤怒，并且每隔15分钟就会发生一次状态转移，同时下一时刻心情的变化只与上一刻的心情有关。那么根据定义，一段时间内她的心情状态就构成一条马尔可夫链。假定这几种心情状态的一步转移概率矩阵构成如下。希望知道每天下班回家，见着她时最有可能处于那种心，好提前做好心理准备。
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{states_name <-}\StringTok{ }\KeywordTok{c}\NormalTok{(}\StringTok{'平静'}\NormalTok{, }\StringTok{'高兴'}\NormalTok{, }\StringTok{'愤怒'}\NormalTok{)}
+\NormalTok{P_s1 <-}\StringTok{ }\KeywordTok{matrix}\NormalTok{(}
+  \KeywordTok{c}\NormalTok{(}\FloatTok{0.2}\NormalTok{, }\FloatTok{0.3}\NormalTok{, }\FloatTok{0.5}\NormalTok{, }\FloatTok{0.1}\NormalTok{, }\FloatTok{0.6}\NormalTok{, }\FloatTok{0.3}\NormalTok{, }\FloatTok{0.4}\NormalTok{, }\FloatTok{0.2}\NormalTok{, }\FloatTok{0.4}\NormalTok{), }\DataTypeTok{ncol =} \DecValTok{3}\NormalTok{, }\DataTypeTok{byrow =} \OtherTok{TRUE}\NormalTok{, }
+  \DataTypeTok{dimnames =} \KeywordTok{list}\NormalTok{(states_name, states_name)}
+\NormalTok{  )}
+\KeywordTok{kable}\NormalTok{(P_s1)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{longtable}[]{@{}lccc@{}}
+\toprule
+& 平静 & 高兴 & 愤怒\tabularnewline
+\midrule
+\endhead
+平静 & 0.2 & 0.3 & 0.5\tabularnewline
+高兴 & 0.1 & 0.6 & 0.3\tabularnewline
+愤怒 & 0.4 & 0.2 & 0.4\tabularnewline
+\bottomrule
+\end{longtable}
+
+随意给定初值条件进行概率推演，结果如下。
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{# 初始概率 平静 高兴 愤怒}
+\NormalTok{pi0 <-}\StringTok{ }\KeywordTok{matrix}\NormalTok{(}\KeywordTok{c}\NormalTok{(}\FloatTok{0.7}\NormalTok{, }\FloatTok{0.2}\NormalTok{, }\FloatTok{0.1}\NormalTok{), }\DataTypeTok{ncol =} \DecValTok{3}\NormalTok{, }\DataTypeTok{byrow =} \OtherTok{TRUE}\NormalTok{)}
+\KeywordTok{colnames}\NormalTok{(pi0) <-}\StringTok{ }\NormalTok{states_name}
+\CommentTok{# 概率迭代}
+\NormalTok{PI <-}\StringTok{ }\NormalTok{pi0}
+\ControlFlowTok{for}\NormalTok{ (i }\ControlFlowTok{in} \DecValTok{2}\OperatorTok{:}\DecValTok{10}\NormalTok{) \{}
+\NormalTok{  PI <-}\StringTok{ }\KeywordTok{rbind}\NormalTok{(PI, PI[i }\OperatorTok{-}\StringTok{ }\DecValTok{1}\NormalTok{,] }\OperatorTok{%*%}\StringTok{ }\NormalTok{P_s1)}
+\NormalTok{\}}
+\KeywordTok{kable}\NormalTok{(PI)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{longtable}[]{@{}ccc@{}}
+\toprule
+平静 & 高兴 & 愤怒\tabularnewline
+\midrule
+\endhead
+0.7000000 & 0.2000000 & 0.1000000\tabularnewline
+0.2000000 & 0.3500000 & 0.4500000\tabularnewline
+0.2550000 & 0.3600000 & 0.3850000\tabularnewline
+0.2410000 & 0.3695000 & 0.3895000\tabularnewline
+0.2409500 & 0.3719000 & 0.3871500\tabularnewline
+0.2402400 & 0.3728550 & 0.3869050\tabularnewline
+0.2400955 & 0.3731660 & 0.3867385\tabularnewline
+0.2400311 & 0.3732760 & 0.3866930\tabularnewline
+0.2400110 & 0.3733135 & 0.3866755\tabularnewline
+0.2400038 & 0.3733265 & 0.3866698\tabularnewline
+\bottomrule
+\end{longtable}
+
+发现有0.613的概率不会挨批。于是每天携带一块秒表，进门前快速按下读取毫秒数。如果数值
+小于0.613放心大胆进门，否则等15分钟再按一次。
+
+\section{4.蒙特卡洛}
+
+\section{5.MCMC}\label{mcmc}
+
+\subsection{5.1 MCMC采样}\label{mcmc}
+
+\subsubsection{5.1.1原理}
+
+\paragraph{(1)细致平稳条件}
+
+\textbf{定理} 如果非周期马氏链的转移矩阵\(P\)和概率分布\(\pi(x)\)满足 \[
+\pi(i) P_{ij} = \pi(j) P_{ji}，对任意的i,j
+\] 则\(\pi(x)\)为该马氏链的平稳分布。
+令\(\pi(x)\)为需要抽样的目标分布，则如果能够得到一个转移概率矩阵\(P\)使得细致平稳条件成立，那么从一个简单分布中获取随机样本（这里简单分布指容易通过计算机程序进行直接抽样的分布，采用什么样的简单分布，视场景而定），经过\(P\)完成若干次转移变换，则最终会到达目标分布从而完成从\(\pi(x)\)中进行抽样。因而只要能够确定\(P\)，就能够实现抽样。
+
+\paragraph{(2)利用细致平稳条件}
+
+既然知道了细致平稳条件这一硬性标杆，即便没有条件，那就创造条件。
+假设随机给定一个形式上合规的矩阵\(Q\)作为转移矩阵,则细致平稳条件一般无法满足：
+\[
+p(i)q(i,j)!=p(j)q(j,i)
+\] 此时构造如下两个新变量，分别乘以等式两端。 \[
+\alpha(i,j)=p_jq(j,i), \alpha(j,i)=p_iq(i,j)
+\] 由于： \[
+p(i)q(i,j)p(j)q(j,i)=p(j)q(j,i)p(i)q(i,j) 
+\] 所以有： \[
+p(i)q(i,j)\alpha_{ij}=p(j)q(j,i)\alpha_(j,i) 
+\] 此时令: \[
+Q^\prime(i,j) = q(i,j)\alpha(i,j), Q^\prime(j,i) = q(j,i)\alpha(j,i)
+\]
+可知，在引入\(Q^\prime\)的条件下，下式成立，也即细致平稳条件满足。满足了细致平稳条件，就可进行抽样了！
+\[
+p(i)Q^\prime(i,j)=p(j)Q^\prime(j,i)
+\]
+
+\paragraph{(2)理解}
+
+要理解\(Q -> Q^\prime\)的过程是如何实现的，就是要理解\(\alpha(i,j)\)在前后两个马氏链的变换上所起到的作用。
+
+假设有一枚不均质的硬币，\(P(X=正面)=0.6\)，那么如何模拟一次抛掷的动作呢？如下图所示，问题等价于在{[}0,1{]}区间内，在0.6的位置将整个区间分割为{[}0,0.6{]},(0.6,1{]},并向其中随机撒点，任意一次撒点后点落入左侧区间，则表示正面向上，落入右侧区间则表示反面向上。随机撒点的动作，通过\textbf{均匀分布}抽样实现。
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{temp <-}\StringTok{ }\KeywordTok{data.frame}\NormalTok{(}\DataTypeTok{start =} \KeywordTok{c}\NormalTok{(}\DecValTok{0}\NormalTok{, }\FloatTok{0.6}\NormalTok{), }\DataTypeTok{end =} \KeywordTok{c}\NormalTok{(}\FloatTok{0.6}\NormalTok{, }\DecValTok{1}\NormalTok{), }\DataTypeTok{type =} \KeywordTok{c}\NormalTok{(}\StringTok{'pa'}\NormalTok{, }\StringTok{'pb'}\NormalTok{))}
+\KeywordTok{ggplot}\NormalTok{() }\OperatorTok{+}\StringTok{ }
+\StringTok{  }\KeywordTok{geom_segment}\NormalTok{(}\DataTypeTok{data =}\NormalTok{ temp, }\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x =}\NormalTok{ start, }\DataTypeTok{xend =}\NormalTok{ end, }\DataTypeTok{y =} \DecValTok{0}\NormalTok{, }\DataTypeTok{yend =} \DecValTok{0}\NormalTok{)) }\OperatorTok{+}\StringTok{ }
+\StringTok{  }\KeywordTok{geom_point}\NormalTok{(}\DataTypeTok{data =}\NormalTok{ temp, }\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x =}\NormalTok{ start, }\DataTypeTok{y =} \DecValTok{0}\NormalTok{), }\DataTypeTok{col =} \StringTok{'blue'}\NormalTok{, }\DataTypeTok{size =} \DecValTok{2}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_point}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x =} \KeywordTok{c}\NormalTok{(}\DecValTok{0}\NormalTok{, }\DecValTok{1}\NormalTok{),}\DataTypeTok{y =} \DecValTok{0}\NormalTok{), }\DataTypeTok{size =} \DecValTok{2}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_point}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x =} \FloatTok{0.5}\NormalTok{, }\DataTypeTok{y =} \FloatTok{0.15}\NormalTok{), }\DataTypeTok{col =} \StringTok{'red'}\NormalTok{, }\DataTypeTok{size =} \DecValTok{3}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_segment}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x =} \FloatTok{0.4}\NormalTok{, }\DataTypeTok{y =} \FloatTok{0.18}\NormalTok{, }\DataTypeTok{xend =} \FloatTok{0.48}\NormalTok{, }\DataTypeTok{yend =} \FloatTok{0.16}\NormalTok{), }
+               \DataTypeTok{arrow =} \KeywordTok{arrow}\NormalTok{(}\DataTypeTok{length =} \KeywordTok{unit}\NormalTok{(}\FloatTok{0.03}\NormalTok{, }\StringTok{"npc"}\NormalTok{)), }\DataTypeTok{size =} \DecValTok{1}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_text}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x =} \FloatTok{0.55}\NormalTok{, }\DataTypeTok{y =} \FloatTok{0.15}\NormalTok{, }\DataTypeTok{label =} \StringTok{'U(0, 1)'}\NormalTok{)) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_text}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x =} \KeywordTok{c}\NormalTok{(}\DecValTok{0}\NormalTok{, }\FloatTok{0.6}\NormalTok{, }\DecValTok{1}\NormalTok{), }\DataTypeTok{y =} \OperatorTok{-}\FloatTok{0.02}\NormalTok{, }\DataTypeTok{label =} \KeywordTok{c}\NormalTok{(}\StringTok{'0'}\NormalTok{, }\StringTok{'0.6'}\NormalTok{,}\StringTok{'1'}\NormalTok{))) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_text}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x =} \KeywordTok{c}\NormalTok{(}\FloatTok{0.25}\NormalTok{, }\FloatTok{0.75}\NormalTok{), }\DataTypeTok{y =} \OperatorTok{-}\FloatTok{0.03}\NormalTok{, }\DataTypeTok{label =} \KeywordTok{c}\NormalTok{(}\StringTok{'Q新'}\NormalTok{, }\StringTok{'Q旧'}\NormalTok{))) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{theme_void}\NormalTok{() }\OperatorTok{+}
+\StringTok{  }\KeywordTok{scale_y_continuous}\NormalTok{(}\DataTypeTok{limits =} \KeywordTok{c}\NormalTok{(}\OperatorTok{-}\FloatTok{0.1}\NormalTok{, }\FloatTok{0.25}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{MCMC_files/figure-latex/unnamed-chunk-3-1.pdf}
+
+在这里\(\alpha(i,j)\)，实际上就是扮演了硬币的角色，它的作用就是在保持整个抽样过程随机性的前提下，按概率实现马氏链的更新。
+
+\subsubsection{5.1.2算法}
+
+假设Q表示一步状态转移矩阵（对应的在连续的情况下，用D表示概率密度函数）。
+1.
+用X表示由MCMC过程产生的状态向量，\(Q_0\)表示状态转移矩阵（\(D_0\)表示抽样分布）。初始化\(X_0=x_0\)，其中\(x_0\)是从状态集（分布）中获取的随机样本。
+2. 对\(t = 0, 1, 2, \cdots,n\)重复如下步骤进行采样：
+第\(t\)时刻有\(X_t=x_t\),
+采样\(y~q(x|x_t)\)(此时状态转移矩阵为\(Q_t=q(x|x_t)\))。
+从\(U(0,1)\)中抽取一个样本点\(u\)
+如果\(u<\alpha(x_t, y)=p(y)*q(x_t|y)\)则接受转移\(X_{t+1}=y\)
+否则拒绝转移，\(X_{t+1}=x_t\), \(Q_{t+1} = Q_t\)
+
+\subsection{5.2 M-H方法}\label{m-h}
+
+\subsubsection{5.2.1原理}\label{-1}
+
+由于\(\alpha(i,j)=p_{j}q(j,i) < 1\)，通常是一个比较小的数字，因此在一次采样中很容易拒绝跳转。从而导致采样的时间成本、计算成本很高。M-H(Metropolis-Hastings)采样，通过放大跳转率\(\alpha(i,j)\)提高了跳转概率，缩短了采样过程。
+对下式两边同时除以\(p(i)q(i,j)\) \[
+p(i)q(i,j)p(j)q(j,i)=p(j)q(j,i)p(i)q(i,j) \\ 
+p(i)q(i,j)\frac{p(j)q(j,i)}{p(i)q(i,j)}=p(j)q(j,i) 
+\] 此时有 \[
+\alpha(i,j)=\frac{p(j)q(j,i)}{p(i)q(i,j)},\alpha(j,i)=1
+\]
+此时，如果\(\alpha(i,j) = \frac{p(j)q(j,i)}{p(i)q(i,j)} < 1\)则\(\alpha(i,j)\)按照\(\alpha(j,i)\)放大到1的比例等比例放大。但如果\(\frac{p(j)q(j,i)}{p(i)q(i,j)} > 1\)就不行了，概率是不肯大于1的。那么此时就反过来,同除以\(p(j)q(j,i)\).
+
+\[
+p(i)q(i,j)p(j)q(j,i)=p(j)q(j,i)p(i)q(i,j) \\ 
+p(i)q(i,j)=p(j)q(j,i)\frac{p(i)q(i,j)}{p(j)q(j,i)}
+\] 此时有 \[\alpha(i,j) = 1,\alpha(j,i)=\frac{p(i)q(i,j)}{p(j)q(j,i)}\]
+当然为了跳转，我关心的只有\(\alpha(i,j)\)，根据以上情况新的\(\alpha(i,j)\)可定义为：
+\[
+\alpha(i,j)=min(\frac{p(j)q(j,i)}{p(i)q(i,j)},1)
+\] 这就是M-H方法对MCMC方法的改进。
+
+\subsubsection{5.2.2算法}\label{-1}
+
+其它不变，这里只是改变了跳转率的计算方法。 1.
+用X表示由MCMC过程产生的状态向量，\(Q_0\)表示状态转移矩阵（\(D_0\)表示抽样分布）。初始化\(X_0=x_0\)，其中\(x_0\)是从状态集（分布）中获取的随机样本。
+2. 对\(t = 0, 1, 2, \cdots,n\)重复如下步骤进行采样：
+第\(t\)时刻有\(X_t=x_t\),
+采样\(y~q(x|x_t)\)(此时状态转移矩阵为\(Q_t=q(x|x_t)\))。
+从\(U(0,1)\)中抽取一个样本点\(u\)
+如果\(u<\alpha(x_t, y)=min(\frac{p(j)q(j,i)}{p(i)q(i,j)},1)\)则接受转移\(X_{t+1}=y\)
+否则拒绝转移，\(X_{t+1}=x_t\), \(Q_{t+1} = Q_t\)
+
+\subsection{5.3 Gibbs方法}\label{gibbs}
+
+\subsubsection{5.3.1原理}\label{-2}
+
+\paragraph{(1)M-H方法的局限}\label{m-h}
+
+M-H方法，虽然实现了跳转率的放大，但依然不能保证100\%的跳转，这就意味着总归还是要浪费不少样本，即使已经到达稳态，也还是经常要抛弃样本。这也极大的限制了M-H算法的应用范围。如果有一种方法，能够保证每次跳转都以100\%的概率被接受，那就更完美的解决了这一问题。
+
+\paragraph{(2)轮换采样}
+
+对于定义于二维空间中的马氏链，考虑如下等式： \[
+p(x_1, y_1)p(y_2|x_1)=p(x_1)p(y_1|x_1)p(y_2|x_1) \\
+p(x_1, y_2)p(y_1|x_1)=p(x_1)p(y_2|x_1)p(y_1|x_1)
+\] 两式右边相等，因此有： \[
+p(x_1, y_1)p(y_2|x_1)=p(x_1, y_2)p(y_1|x_1)
+\]
+这个等式完全满足细致平稳条件，可以实现点\((x_1,y_1)\)到点\((x_1,y_2)\)以100\%的跳转率进行转换。同时可以看到转换后的两点在平行于\(y\)轴的同一条直线上。同理可知固定\(y\)轴而在\(x\)轴的方向上进行采样，也同样满足细致平稳条件。因此对于二维空间中的马氏链，如下图所示，只要在两个轴的方向上进行采样就不存在接受或者抛弃的问题。
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{ggplot}\NormalTok{() }\OperatorTok{+}\StringTok{ }
+\StringTok{  }\KeywordTok{geom_segment}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x =} \KeywordTok{c}\NormalTok{(}\DecValTok{1}\NormalTok{, }\DecValTok{1}\NormalTok{), }\DataTypeTok{xend =} \KeywordTok{c}\NormalTok{(}\DecValTok{1}\NormalTok{, }\DecValTok{2}\NormalTok{), }\DataTypeTok{y =} \KeywordTok{c}\NormalTok{(}\DecValTok{1}\NormalTok{,}\DecValTok{1}\NormalTok{), }\DataTypeTok{yend =} \KeywordTok{c}\NormalTok{(}\DecValTok{2}\NormalTok{,}\DecValTok{1}\NormalTok{)), }
+               \DataTypeTok{arrow =} \KeywordTok{arrow}\NormalTok{(}\DataTypeTok{length =} \KeywordTok{unit}\NormalTok{(}\FloatTok{0.03}\NormalTok{, }\StringTok{"npc"}\NormalTok{)), }\DataTypeTok{size =} \DecValTok{1}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_text}\NormalTok{(}\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x =} \FloatTok{0.55}\NormalTok{, }\DataTypeTok{y =} \FloatTok{0.15}\NormalTok{, }\DataTypeTok{label =} \StringTok{'U(0, 1)'}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{MCMC_files/figure-latex/unnamed-chunk-4-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+  \CommentTok{# geom_point(data = temp, aes(x = start, y = 0), col = 'blue', size = 2) +}
+  \CommentTok{# geom_point(aes(x = c(0, 1),y = 0), size = 2) +}
+  \CommentTok{# geom_point(aes(x = 0.5, y = 0.15), col = 'red', size = 3) +}
+  \CommentTok{# geom_segment(aes(x = 0.4, y = 0.18, xend = 0.48, yend = 0.16), }
+  \CommentTok{#              arrow = arrow(length = unit(0.03, "npc")), size = 1) +}
+  \CommentTok{# geom_text(aes(x = 0.55, y = 0.15, label = 'U(0, 1)')) +}
+  \CommentTok{# geom_text(aes(x = c(0, 0.6, 1), y = -0.02, label = c('0', '0.6','1'))) +}
+  \CommentTok{# geom_text(aes(x = c(0.25, 0.75), y = -0.03, label = c('Q新', 'Q旧'))) +}
+  \CommentTok{# theme_void() +}
+  \CommentTok{# scale_y_continuous(limits = c(-0.1, 0.25))}
+\end{Highlighting}
+\end{Shaded}
+
+同理，将这一性质推广到\(N\)维空间也是成立的。
+
+\subsubsection{5.3.2算法}\label{-2}
+
+\section{6.示例}\label{-1}
+
+\subsection{6.1 例一}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{SomeDist <-}\StringTok{ }\ControlFlowTok{function}\NormalTok{(x)\{}
+  \ControlFlowTok{if}\NormalTok{ (x }\OperatorTok{<}\StringTok{ }\DecValTok{6}\NormalTok{) \{}
+\NormalTok{    res <-}\StringTok{ }\KeywordTok{dnorm}\NormalTok{(x, }\DataTypeTok{mean =} \DecValTok{2}\NormalTok{, }\DataTypeTok{sd =} \DecValTok{1}\NormalTok{)}
+\NormalTok{  \} }\ControlFlowTok{else}\NormalTok{ \{}
+\NormalTok{    res <-}\StringTok{ }\KeywordTok{dnorm}\NormalTok{(x, }\DataTypeTok{mean =} \DecValTok{9}\NormalTok{, }\DataTypeTok{sd =} \DecValTok{2}\NormalTok{)}
+\NormalTok{  \}}
+  \KeywordTok{return}\NormalTok{(res)}
+\NormalTok{\}}
+ 
+\NormalTok{n1 =}\StringTok{ }\DecValTok{5000}  \CommentTok{# burn in}
+\NormalTok{n2 =}\StringTok{ }\DecValTok{25000}
+\NormalTok{samples <-}\StringTok{ }\KeywordTok{rep}\NormalTok{(}\DecValTok{0}\NormalTok{, n1 }\OperatorTok{+}\StringTok{ }\NormalTok{n2)}
+\ControlFlowTok{for}\NormalTok{ (i }\ControlFlowTok{in} \DecValTok{1}\OperatorTok{:}\NormalTok{(n1 }\OperatorTok{+}\StringTok{ }\NormalTok{n2 }\OperatorTok{-}\StringTok{ }\DecValTok{1}\NormalTok{)) \{}
+\NormalTok{  temp <-}\StringTok{ }\KeywordTok{rnorm}\NormalTok{(}\DecValTok{1}\NormalTok{,}\DataTypeTok{mean =}\NormalTok{ samples[i], }\DataTypeTok{sd =} \DecValTok{4}\NormalTok{)}
+\NormalTok{  alpha <-}\StringTok{ }\KeywordTok{min}\NormalTok{(}\DecValTok{1}\NormalTok{, }\KeywordTok{SomeDist}\NormalTok{(temp)}\OperatorTok{/}\KeywordTok{SomeDist}\NormalTok{(samples[i]))}
+  \ControlFlowTok{if}\NormalTok{ (}\KeywordTok{runif}\NormalTok{(}\DecValTok{1}\NormalTok{, }\DecValTok{0}\NormalTok{, }\DecValTok{1}\NormalTok{) }\OperatorTok{<}\StringTok{ }\NormalTok{alpha) \{}
+\NormalTok{    samples[i }\OperatorTok{+}\StringTok{ }\DecValTok{1}\NormalTok{] <-}\StringTok{ }\NormalTok{temp}
+\NormalTok{  \} }\ControlFlowTok{else}\NormalTok{ \{}
+\NormalTok{    samples[i }\OperatorTok{+}\StringTok{ }\DecValTok{1}\NormalTok{] <-}\StringTok{ }\NormalTok{samples[i]}
+\NormalTok{  \}}
+\NormalTok{\}}
+
+\NormalTok{correct_samples <-}\StringTok{ }\NormalTok{samples[(n1 }\OperatorTok{+}\StringTok{ }\DecValTok{1}\NormalTok{)}\OperatorTok{:}\NormalTok{n2]}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{sampledata <-}\StringTok{ }\KeywordTok{data.frame}\NormalTok{(}\DataTypeTok{x =}\NormalTok{ correct_samples)}
+\NormalTok{norm1 <-}\StringTok{ }\KeywordTok{data.frame}\NormalTok{(}\DataTypeTok{x =}\NormalTok{ correct_samples, }\DataTypeTok{y =} \KeywordTok{dnorm}\NormalTok{(correct_samples, }\DecValTok{2}\NormalTok{, }\DecValTok{1}\NormalTok{))}
+\NormalTok{norm2 <-}\StringTok{ }\KeywordTok{data.frame}\NormalTok{(}\DataTypeTok{x =}\NormalTok{ correct_samples, }\DataTypeTok{y =} \KeywordTok{dnorm}\NormalTok{(correct_samples, }\DecValTok{9}\NormalTok{, }\DecValTok{2}\NormalTok{))}
+\KeywordTok{ggplot}\NormalTok{() }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_histogram}\NormalTok{(}
+    \DataTypeTok{data =}\NormalTok{ sampledata, }
+    \KeywordTok{aes}\NormalTok{(x, }\DataTypeTok{y =}\NormalTok{ ..density.., }\DataTypeTok{fill =}\NormalTok{ ..density..), }\DataTypeTok{binwidth =} \FloatTok{0.2}
+\NormalTok{    ) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_point}\NormalTok{(}\DataTypeTok{data =}\NormalTok{ norm1, }\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x =}\NormalTok{ x, }\DataTypeTok{y =}\NormalTok{ y), }\DataTypeTok{col =} \StringTok{'orangered'}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_point}\NormalTok{(}\DataTypeTok{data =}\NormalTok{ norm2, }\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x =}\NormalTok{ x, }\DataTypeTok{y =}\NormalTok{ y), }\DataTypeTok{col =} \StringTok{'forestgreen'}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{MCMC_files/figure-latex/unnamed-chunk-6-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+  \CommentTok{# theme_yk_academic_brief() +}
+  \CommentTok{# scale_fill_academic_light()}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{SomeDist <-}\StringTok{ }\ControlFlowTok{function}\NormalTok{(x)\{}
+  \ControlFlowTok{if}\NormalTok{ (x }\OperatorTok{<}\StringTok{ }\DecValTok{6}\NormalTok{) \{}
+\NormalTok{    res <-}\StringTok{ }\KeywordTok{dnorm}\NormalTok{(x, }\DataTypeTok{mean =} \DecValTok{6}\NormalTok{, }\DataTypeTok{sd =} \DecValTok{2}\NormalTok{)}
+\NormalTok{  \} }\ControlFlowTok{else}\NormalTok{ \{}
+\NormalTok{    res <-}\StringTok{ }\KeywordTok{dnorm}\NormalTok{(x, }\DataTypeTok{mean =} \DecValTok{6}\NormalTok{, }\DataTypeTok{sd =} \DecValTok{6}\NormalTok{)}
+\NormalTok{  \}}
+  \KeywordTok{return}\NormalTok{(res)}
+\NormalTok{\}}
+ 
+\NormalTok{n1 =}\StringTok{ }\DecValTok{15000}  \CommentTok{# burn in}
+\NormalTok{n2 =}\StringTok{ }\DecValTok{25000}
+\NormalTok{samples <-}\StringTok{ }\KeywordTok{rep}\NormalTok{(}\DecValTok{0}\NormalTok{, n1 }\OperatorTok{+}\StringTok{ }\NormalTok{n2)}
+\ControlFlowTok{for}\NormalTok{ (i }\ControlFlowTok{in} \DecValTok{1}\OperatorTok{:}\NormalTok{(n1 }\OperatorTok{+}\StringTok{ }\NormalTok{n2 }\OperatorTok{-}\StringTok{ }\DecValTok{1}\NormalTok{)) \{}
+\NormalTok{  temp <-}\StringTok{ }\KeywordTok{rnorm}\NormalTok{(}\DecValTok{1}\NormalTok{,}\DataTypeTok{mean =}\NormalTok{ samples[i], }\DataTypeTok{sd =} \DecValTok{4}\NormalTok{)}
+\NormalTok{  alpha <-}\StringTok{ }\KeywordTok{min}\NormalTok{(}\DecValTok{1}\NormalTok{, }\KeywordTok{SomeDist}\NormalTok{(temp)}\OperatorTok{/}\KeywordTok{SomeDist}\NormalTok{(samples[i]))}
+  \ControlFlowTok{if}\NormalTok{ (}\KeywordTok{runif}\NormalTok{(}\DecValTok{1}\NormalTok{, }\DecValTok{0}\NormalTok{, }\DecValTok{1}\NormalTok{) }\OperatorTok{<}\StringTok{ }\NormalTok{alpha) \{}
+\NormalTok{    samples[i }\OperatorTok{+}\StringTok{ }\DecValTok{1}\NormalTok{] <-}\StringTok{ }\NormalTok{temp}
+\NormalTok{  \} }\ControlFlowTok{else}\NormalTok{ \{}
+\NormalTok{    samples[i }\OperatorTok{+}\StringTok{ }\DecValTok{1}\NormalTok{] <-}\StringTok{ }\NormalTok{samples[i]}
+\NormalTok{  \}}
+\NormalTok{\}}
+
+\NormalTok{correct_samples <-}\StringTok{ }\NormalTok{samples[(n1 }\OperatorTok{+}\StringTok{ }\DecValTok{1}\NormalTok{)}\OperatorTok{:}\NormalTok{n2]}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{sampledata <-}\StringTok{ }\KeywordTok{data.frame}\NormalTok{(}\DataTypeTok{x =}\NormalTok{ correct_samples)}
+\NormalTok{norm1 <-}\StringTok{ }\KeywordTok{data.frame}\NormalTok{(}\DataTypeTok{x =}\NormalTok{ correct_samples, }\DataTypeTok{y =} \KeywordTok{dnorm}\NormalTok{(correct_samples, }\DecValTok{6}\NormalTok{, }\DecValTok{2}\NormalTok{))}
+\NormalTok{norm2 <-}\StringTok{ }\KeywordTok{data.frame}\NormalTok{(}\DataTypeTok{x =}\NormalTok{ correct_samples, }\DataTypeTok{y =} \KeywordTok{dnorm}\NormalTok{(correct_samples, }\DecValTok{6}\NormalTok{, }\DecValTok{6}\NormalTok{))}
+\KeywordTok{ggplot}\NormalTok{() }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_histogram}\NormalTok{(}
+    \DataTypeTok{data =}\NormalTok{ sampledata, }
+    \KeywordTok{aes}\NormalTok{(x, }\DataTypeTok{y =}\NormalTok{ ..density.., }\DataTypeTok{fill =}\NormalTok{ ..density..), }\DataTypeTok{binwidth =} \FloatTok{0.2}
+\NormalTok{    ) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_point}\NormalTok{(}\DataTypeTok{data =}\NormalTok{ norm1, }\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x =}\NormalTok{ x, }\DataTypeTok{y =}\NormalTok{ y), }\DataTypeTok{col =} \StringTok{'orangered'}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom_point}\NormalTok{(}\DataTypeTok{data =}\NormalTok{ norm2, }\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x =}\NormalTok{ x, }\DataTypeTok{y =}\NormalTok{ y), }\DataTypeTok{col =} \StringTok{'forestgreen'}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{MCMC_files/figure-latex/unnamed-chunk-8-1.pdf}
+
+\subsection{6.2 例二}
+
+\section{7.参考资料}
+
+\begin{itemize}
+\tightlist
+\item
+  {[}1{]} 靳志辉《LDA数学八卦》
+\end{itemize}
+
+
+\end{document}
